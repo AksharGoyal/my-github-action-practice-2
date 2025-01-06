@@ -1,0 +1,38 @@
+name: Detect Logging in Custom Extractor
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  detect-logging:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Filter for house-spider changes
+      uses: dorny/paths-filter@v3
+      id: changes
+      with:
+        filters: |
+          housespiders:
+            - 'house-spiders/**/*.py'
+            
+    - name: Detect print statements
+      if: steps.changes.outputs.housespiders == 'true'
+      working-directory: ./house-spiders
+      run: |
+        if grep -rn "print" --include='*.py' .; then
+          echo "Print statements found!"
+          exit 1
+        fi
+
+    - name: Detect open() statements
+      if: steps.changes.outputs.housespiders == 'true'
+      working-directory: ./house-spiders
+      run: |
+        if grep -rn "with open" --include='*.py' .; then
+          echo "logging into file statements found!"
+          exit 1
+        fi

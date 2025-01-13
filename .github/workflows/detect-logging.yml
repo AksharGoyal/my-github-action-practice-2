@@ -12,22 +12,24 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Filter for house-spider changes
-      uses: dorny/paths-filter@v3
+    - name: Get changed files
       id: changes
-      with:
-        filters: |
-          housespiders:
-            - 'house-spiders/**/*.py'
-            
-    - name: Detect print statements
-      if: steps.changes.outputs.housespiders == 'true'
-      working-directory: ./house-spiders
       run: |
-        if grep -rn "print" --include='*.py' .; then
-          echo "Print statements found!"
-          exit 1
-        fi
+        echo "Fetching changed files..."
+        CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+        echo "Changed files: $CHANGED_FILES"
+        echo "::set-output name=files::$CHANGED_FILES"
+
+    - name: Detect print statements
+      if: steps.changes.outputs.files != ''
+      run: |
+        echo "${{ steps.changes.outputs.files }}" | grep -E '\.py$' | while read file; do
+          if grep -rn "print" "$file"; then
+            echo "Print statements found in $file"
+            exit 1
+          fi
+        done
+        echo "No print statements detected!"
 
     - name: Detect open() statements
       if: steps.changes.outputs.housespiders == 'true'

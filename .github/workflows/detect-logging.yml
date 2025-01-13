@@ -22,6 +22,7 @@ jobs:
 
     - name: Detect print statements
       if: steps.changes.outputs.files != ''
+      working-directory: ./house-spiders
       run: |
         echo "${{ steps.changes.outputs.files }}" | grep -E '\.py$' | while read file; do
           if grep -rn "print" "$file"; then
